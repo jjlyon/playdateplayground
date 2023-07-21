@@ -1,3 +1,4 @@
+import "CoreLibs/crank"
 import "CoreLibs/graphics"
 import "CoreLibs/object"
 
@@ -12,7 +13,8 @@ function dvd:init(xspeed, yspeed)
 		xspeed = xspeed,
 		yspeed = yspeed,
 		width = 100,
-		height = 20
+		height = 20,
+		radius = 10
 	}
 end
 
@@ -20,9 +22,11 @@ function dvd:swapColors()
 	if (gfx.getBackgroundColor() == gfx.kColorWhite) then
 		gfx.setBackgroundColor(gfx.kColorBlack)
 		gfx.setImageDrawMode("inverted")
+		gfx.setColor(gfx.kColorWhite)
 	else
 		gfx.setBackgroundColor(gfx.kColorWhite)
 		gfx.setImageDrawMode("copy")
+		gfx.setColor(gfx.kColorBlack)
 	end
 end
 
@@ -47,7 +51,16 @@ function dvd:update()
 	label.y += label.yspeed
 end
 
+function dvd:handleCrank(change, acceleratedChange)
+	local label = self.label
+	label.radius += change
+	if label.radius < 1 then
+		label.radius = 1
+	end
+end
+
 function dvd:draw()
     local label = self.label;
+	gfx.drawCircleAtPoint(label.x, label.y, label.radius)
     gfx.drawTextInRect("Template", label.x, label.y, label.width, label.height)
 end
