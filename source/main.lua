@@ -15,13 +15,13 @@ local function loadGame()
 end
 
 local function updateGame()
-	dvd:update() -- DEMO
+	-- dvd:update() -- DEMO
 	softbody:update()
 end
 
 local function drawGame()
 	gfx.clear() -- Clears the screen
-	dvd:draw() -- DEMO
+	-- dvd:draw() -- DEMO
 	softbody:draw()
 end
 
@@ -34,5 +34,5 @@ function playdate.update()
 end
 
 function playdate.cranked(change, acceleratedChange)
-	dvd:handleCrank(change, acceleratedChange)
+	-- dvd:handleCrank(change, acceleratedChange)
 end
