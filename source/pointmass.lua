@@ -7,9 +7,10 @@ local geo <const> = playdate.geometry
 
 class("pointmass").extends()
 
-function pointmass:init(x, y, vx, vy)
-    self.position = geo.vector2D.new(x, y)
-    self.velocity = geo.vector2D.new(vx, vy)
+function pointmass:init(pos, vel, name)
+    self.position = pos
+    self.velocity = vel
+    self.name = name
 end
 
 function pointmass:getPositionPoint()

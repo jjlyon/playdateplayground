@@ -2,6 +2,7 @@ import "CoreLibs/graphics"
 import "CoreLibs/object"
 
 import "collision"
+import "constraint"
 import "pointmass"
 
 local geo <const> = playdate.geometry
@@ -18,25 +19,33 @@ local SPEED_X, SPEED_Y = 1, -1
 class("softbody").extends()
 
 function softbody:init()
-    self.points = {}
-    self.gravity = vec(0, 10)
+    self.gravity = vec(0, 9.8)
     self.elasticity = 0.5
     self.friction = 10
-    for i = 1, 1 do
-        self.points[i] = pointmass(SCREEN_WIDTH - 100, SCREEN_HEIGHT - 100, 100, 100)
-    end
+    -- self.points = {}
+    -- self.points[1] = pointmass(SCREEN_WIDTH - 100, SCREEN_HEIGHT - 100, 100, 100)
+    -- self.points[2] = pointmass(SCREEN_WIDTH - 110, SCREEN_HEIGHT - 110, 100, 100)
+
+    -- self.constraints = {}
+
+    -- self.constraints[1] = constraint(self.points[1], self.points[2], 14, 100, 10)
     -- self.box = createRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT)
+    self.points, self.constraints = createCircle(vec(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2), 30, 10)
+    -- printTable(self.constraints)
 end
 
 function softbody:update(dt)
-    for i = 1, #self.points do
+    -- playdate.wait(500)
+    for i, point in ipairs(self.points) do
         -- playdate.wait(500)
-        local p = self.points[i]
-        p:update(self.gravity, 0.2)
+        point:update(self.gravity, 0.2)
 
-        local collision = softbody:collideWithWorld(p)
+        local collision = softbody:collideWithWorld(point)
         
-        self:resolveCollision(p, collision, dt)
+        self:resolveCollision(point, collision, dt)
+    end
+    for i, constraint in ipairs(self.constraints) do
+        constraint:constrain(dt)
     end
     -- self:handleButtons()
 end
@@ -82,23 +91,15 @@ function softbody:collideWithWorld(point)
     if collision_h.depth > collision_v.depth then return collision_h else return collision_v end
 end
 
-function softbody:findCollision()
-    local collision = nil
-    for i = 1, #self.points do
-        local c = self.points[i]:collision(SCREEN_HEIGHT)
-        if not collision or c.depth > collision.depth then
-            collision = c
-        end
-    end
-    return collision
-end
-
 function softbody:draw()
-    for i = 1, #self.points do
-        local p = self.points[i]:getPositionPoint()
+    for i, point in ipairs(self.points) do
+        local p = point.position
         gfx.drawCircleAtPoint(p.x, p.y, 5)
     end
-    -- gfx.drawPolygon(self.box)
+    for i, constraint in ipairs(self.constraints) do
+        gfx.drawLine(constraint.point0.position.x, constraint.point0.position.y, constraint.point1.position.x, constraint.point1.position.y)
+    end
+        -- gfx.drawPolygon(self.box)
 end
 
 function softbody:handleButtons()
@@ -125,14 +126,34 @@ function createRect(x, y, width, height)
     return polygon
 end
 
+-- function createCircle(center, radius, segments)
+--     local points = {}
+--     for i = 0, segments do
+--         local angle = (i - 1) * (2 * math.pi / segments)
+        
+--         points[i] = geo.point.new(center.x + radius * math.cos(angle),center.y + radius * math.sin(angle))
+--     end
+--     local polygon = geo.polygon.new(points)
+--     polygon:close()
+--     return polygon
+-- end
+
 function createCircle(center, radius, segments)
     local points = {}
-    for i = 0, segments do
-        local angle = (i - 1) * (2 * math.pi / segments)
-        
-        points[i] = geo.point.new(center.x + radius * math.cos(angle),center.y + radius * math.sin(angle))
+    for i = 1, segments do
+        local angle = (i) * (2 * math.pi / segments)
+        local angleDeg = angle * 180 / math.pi
+        local x = center.x + radius * math.cos(angle)
+        local y = center.y + radius * math.sin(angle)
+        local name = "point" .. angleDeg
+        points[i] = pointmass(vec(x, y), vec(0, 0), name)
     end
-    local polygon = geo.polygon.new(points)
-    polygon:close()
-    return polygon
+    local arc = 2 * math.pi * radius / segments
+    local constraints = {}
+    local last = points[segments]
+    for i, point in ipairs(points) do
+        constraints[i] = constraint(last, point, arc, 100, 10)
+        last = point
+    end
+    return points, constraints
 end
