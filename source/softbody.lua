@@ -28,9 +28,7 @@ function softbody:init()
     -- self.box = createRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT)
 end
 
-function softbody:update()
-    local dt = 0.02
-    
+function softbody:update(dt)
     for i = 1, #self.points do
         -- playdate.wait(500)
         local p = self.points[i]
@@ -38,31 +36,31 @@ function softbody:update()
 
         local collision = softbody:collideWithWorld(p)
         
-        print("pos " .. p.position.y .. " depth " .. collision.depth)
-
-        -- skip if already collided
-        if collision.depth < 0 then
-            print("skipping")
-            goto continue
-        end
-
-        -- resolve constraint
-        p.position += collision.normal * collision.depth
-
-        -- compute normal and tangential velocities
-        local vn = collision.normal * collision.normal:dotProduct(p.velocity)
-        local vt = p.velocity - vn
-
-        -- bounce
-        vn *= -self.elasticity
-
-        -- friction
-        vt *= math.exp(-self.friction * dt)
-
-        p.velocity = vn + vt
-        ::continue::
+        self:resolveCollision(p, collision, dt)
     end
     -- self:handleButtons()
+end
+
+function softbody:resolveCollision(point, collision, dt)
+    -- skip if already/never collided
+    if collision.depth < 0 then
+        return
+    end
+
+    -- resolve constraint
+    point.position += collision.normal * collision.depth
+
+    -- compute normal and tangential velocities
+    local vn = collision.normal * collision.normal:dotProduct(point.velocity)
+    local vt = point.velocity - vn
+
+    -- bounce
+    vn *= -self.elasticity
+
+    -- friction
+    vt *= math.exp(-self.friction * dt)
+
+    point.velocity = vn + vt
 end
 
 function softbody:collideWithWorld(point)

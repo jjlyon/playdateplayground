@@ -16,7 +16,7 @@ end
 
 local function updateGame()
 	-- dvd:update() -- DEMO
-	softbody:update()
+	softbody:update(1 / playdate.getFPS())
 end
 
 local function drawGame()
