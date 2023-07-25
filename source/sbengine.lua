@@ -16,9 +16,9 @@ local inf <const> = 1e309
 local SCREEN_WIDTH, SCREEN_HEIGHT = playdate.display.getWidth(), playdate.display.getHeight()
 local SPEED_X, SPEED_Y = 1, -1
 
-class("softbody").extends()
+class("sbengine").extends()
 
-function softbody:init()
+function sbengine:init()
     self.gravity = vec(0, 9.8)
     self.elasticity = 0.5
     self.friction = 10
@@ -34,13 +34,13 @@ function softbody:init()
     -- printTable(self.constraints)
 end
 
-function softbody:update(dt)
+function sbengine:update(dt)
     -- playdate.wait(500)
     for i, point in ipairs(self.points) do
         -- playdate.wait(500)
         point:update(self.gravity, 0.2)
 
-        local collision = softbody:collideWithWorld(point)
+        local collision = sbengine:collideWithWorld(point)
         
         self:resolveCollision(point, collision, dt)
     end
@@ -50,7 +50,7 @@ function softbody:update(dt)
     -- self:handleButtons()
 end
 
-function softbody:resolveCollision(point, collision, dt)
+function sbengine:resolveCollision(point, collision, dt)
     -- skip if already/never collided
     if collision.depth < 0 then
         return
@@ -72,7 +72,7 @@ function softbody:resolveCollision(point, collision, dt)
     point.velocity = vn + vt
 end
 
-function softbody:collideWithWorld(point)
+function sbengine:collideWithWorld(point)
     local pos = point.position
     local collision_h = collision(-inf, vec(0, 0))
     if pos.x < 0 then
@@ -91,7 +91,7 @@ function softbody:collideWithWorld(point)
     if collision_h.depth > collision_v.depth then return collision_h else return collision_v end
 end
 
-function softbody:draw()
+function sbengine:draw()
     for i, point in ipairs(self.points) do
         local p = point.position
         gfx.drawCircleAtPoint(p.x, p.y, 5)
@@ -102,7 +102,7 @@ function softbody:draw()
         -- gfx.drawPolygon(self.box)
 end
 
-function softbody:handleButtons()
+function sbengine:handleButtons()
     if playdate.buttonIsPressed(playdate.kButtonUp) then
         self.position.y += SPEED_Y
     end
