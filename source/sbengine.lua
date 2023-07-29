@@ -24,6 +24,8 @@ function sbengine:init()
     self.elasticity = 0.5
     self.friction = 10
     self.springForce = 100
+
+    playdate.startAccelerometer()
     -- self.points = {}
     -- self.points[1] = pointmass(SCREEN_WIDTH - 100, SCREEN_HEIGHT - 100, 100, 100)
     -- self.points[2] = pointmass(SCREEN_WIDTH - 110, SCREEN_HEIGHT - 110, 100, 100)
@@ -39,6 +41,8 @@ function sbengine:init()
 end
 
 function sbengine:update(dt)
+    local gx, gy = playdate.readAccelerometer()
+    self.gravity = vec(gx, gy) * 10
     -- playdate.wait(500)
     for point, i in self.points:iterator() do
         -- playdate.wait(500)
