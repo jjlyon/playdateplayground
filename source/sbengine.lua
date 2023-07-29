@@ -4,6 +4,7 @@ import "CoreLibs/object"
 import "collision"
 import "constraint"
 import "pointmass"
+import "softbody"
 
 local geo <const> = playdate.geometry
 local gfx <const> = playdate.graphics
@@ -22,6 +23,7 @@ function sbengine:init()
     self.gravity = vec(0, 9.8)
     self.elasticity = 0.5
     self.friction = 10
+    self.springForce = 100
     -- self.points = {}
     -- self.points[1] = pointmass(SCREEN_WIDTH - 100, SCREEN_HEIGHT - 100, 100, 100)
     -- self.points[2] = pointmass(SCREEN_WIDTH - 110, SCREEN_HEIGHT - 110, 100, 100)
@@ -30,23 +32,25 @@ function sbengine:init()
 
     -- self.constraints[1] = constraint(self.points[1], self.points[2], 14, 100, 10)
     -- self.box = createRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT)
-    self.points, self.constraints = createCircle(vec(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2), 30, 10)
+    self.points = createCircleSoftbody(vec(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2), 30, 10)
+    self._points = createCircleSoftbody(vec(0, 0), 30, 10)
+    
     -- printTable(self.constraints)
 end
 
 function sbengine:update(dt)
     -- playdate.wait(500)
-    for i, point in ipairs(self.points) do
+    for point, i in self.points:iterator() do
         -- playdate.wait(500)
-        point:update(self.gravity, 0.2)
+        point:update(self.gravity, dt)
 
         local collision = sbengine:collideWithWorld(point)
-        
         self:resolveCollision(point, collision, dt)
     end
-    for i, constraint in ipairs(self.constraints) do
-        constraint:constrain(dt)
-    end
+    -- for i, constraint in ipairs(self.constraints) do
+    --     constraint:constrain(dt)
+    -- end
+    self:rotateShapeBody(self.points:centerOfMass(), dt)
     -- self:handleButtons()
 end
 
@@ -91,14 +95,50 @@ function sbengine:collideWithWorld(point)
     if collision_h.depth > collision_v.depth then return collision_h else return collision_v end
 end
 
+function sbengine:calculateCenterOfMass(sb)
+    local center = vec(0, 0)
+    local count = 0
+    for point in sb:iterator() do
+        center += point.position
+        count += 1
+    end
+    return center / count
+end
+
+function sbengine:rotateShapeBody(center, dt)
+    local a, b = 0, 0
+    for point, i in self.points:iterator() do
+        local r = point.position - center
+        local v = self._points:getPointAt(i)
+        a += r:dotProduct(v.position)
+        b += wedgeProduct(r, v.position)
+    end
+    local angle = -math.atan(b, a)
+    for point, i in self.points:iterator() do
+        local pointOffsetAngle = (i * 2 * math.pi / self.points.size) + angle
+        local v = self._points:getPointAt(i)
+        local target = geo.vector2D.newPolar(v.position:magnitude(), pointOffsetAngle * 180 / math.pi) + center
+        print("target " .. tostring(target) .. " point " .. tostring(v.position + center) .. " angle " .. angle .. " pointoffset " .. pointOffsetAngle)
+        local delta = target - point.position
+        point.velocity += delta * self.springForce * dt
+    end
+end
+
+function wedgeProduct(a, b)
+    return a.x * b.y - a.y * b.x
+end
+
 function sbengine:draw()
-    for i, point in ipairs(self.points) do
+    for point in self.points:iterator() do
         local p = point.position
         gfx.drawCircleAtPoint(p.x, p.y, 5)
     end
-    for i, constraint in ipairs(self.constraints) do
-        gfx.drawLine(constraint.point0.position.x, constraint.point0.position.y, constraint.point1.position.x, constraint.point1.position.y)
-    end
+    local center = self.points:centerOfMass()
+    gfx.drawCircleAtPoint(center.x, center.y, 10)
+
+    -- for i, constraint in ipairs(self.constraints) do
+    --     gfx.drawLine(constraint.point0.position.x, constraint.point0.position.y, constraint.point1.position.x, constraint.point1.position.y)
+    -- end
         -- gfx.drawPolygon(self.box)
 end
 
@@ -138,7 +178,7 @@ end
 --     return polygon
 -- end
 
-function createCircle(center, radius, segments)
+function createCircle(center, radius, segments, springForce)
     local points = {}
     for i = 1, segments do
         local angle = (i) * (2 * math.pi / segments)
@@ -152,8 +192,20 @@ function createCircle(center, radius, segments)
     local constraints = {}
     local last = points[segments]
     for i, point in ipairs(points) do
-        constraints[i] = constraint(last, point, arc, 100, 10)
+        constraints[i] = constraint(last, point, arc, springForce, 10)
         last = point
     end
     return points, constraints
+end
+
+
+function createCircleSoftbody(center, radius, segments)
+    local sb = softbody()
+    for i = 1, segments do
+        local angle = i * 2 * math.pi / segments
+        local x = center.x + radius * math.cos(angle)
+        local y = center.y + radius * math.sin(angle)
+        sb:appendVertex(pointmass(vec(x, y), vec(0, 0)))
+    end
+    return sb
 end

@@ -1,8 +1,3 @@
-import "CoreLibs/graphics"
-import "CoreLibs/object"
-
-local geo <const> = playdate.geometry
-
 class("constraint").extends()
 
 function constraint:init(point0, point1, distance, springForce, springDamping)
