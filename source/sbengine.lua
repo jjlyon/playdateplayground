@@ -114,13 +114,15 @@ function sbengine:rotateShapeBody(center, dt)
         b += wedgeProduct(r, v.position)
     end
     local angle = -math.atan(b, a)
+    if math.abs(angle) < 0.001 then angle = 0 end
     for point, i in self.points:iterator() do
         local pointOffsetAngle = (i * 2 * math.pi / self.points.size) + angle
         local v = self._points:getPointAt(i)
-        local target = geo.vector2D.newPolar(v.position:magnitude(), pointOffsetAngle * 180 / math.pi) + center
-        print("target " .. tostring(target) .. " point " .. tostring(v.position + center) .. " angle " .. angle .. " pointoffset " .. pointOffsetAngle)
+        local target = geo.vector2D.newPolar(v.position:magnitude(), pointOffsetAngle * 180 / math.pi + 90) + center
+        print("target " .. tostring(target) .. " point " .. tostring(v.position) .. " angle " .. angle .. " pointoffset " .. pointOffsetAngle)
         local delta = target - point.position
         point.velocity += delta * self.springForce * dt
+        print(delta)
     end
 end
 
@@ -201,7 +203,7 @@ end
 
 function createCircleSoftbody(center, radius, segments)
     local sb = softbody()
-    for i = 1, segments do
+    for i = 0, segments - 1 do
         local angle = i * 2 * math.pi / segments
         local x = center.x + radius * math.cos(angle)
         local y = center.y + radius * math.sin(angle)
